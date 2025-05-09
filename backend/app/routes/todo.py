@@ -5,33 +5,33 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.user import User
 from ..models.todo import Todo
-from ..schemas.todo import TodoCreate, TodoUpdate, TodoResponse
-from ..utils.auth import get_current_user
+from ..schemas.todo import TodoCreate, TodoUpdate, TodoList
+
 
 # Create router
 router = APIRouter(prefix="/api/todos", tags=["todos"])
 
 
-@router.get("/", response_model=List[TodoResponse])
+@router.get("/", response_model=List[TodoList])
 async def get_all_todos(
-        current_user: User = Depends(get_current_user),
+        # current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Get all todos for the current user"""
-    todos = db.query(Todo).filter(Todo.user_id == current_user.id).all()
+    # todos = db.query(Todo).filter(Todo.user_id == current_user.id).all()
+    todos = db.query(Todo).all()
     return todos
 
 
-@router.get("/{todo_id}", response_model=TodoResponse)
+@router.get("/{todo_id}", response_model=TodoList)
 async def get_todo_by_id(
         todo_id: int,
-        current_user: User = Depends(get_current_user),
+        # current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Get a specific todo by ID"""
     todo = db.query(Todo).filter(
-        Todo.id == todo_id,
-        Todo.user_id == current_user.id
+        Todo.id == todo_id
     ).first()
 
     if not todo:
@@ -43,10 +43,10 @@ async def get_todo_by_id(
     return todo
 
 
-@router.post("/", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TodoList, status_code=status.HTTP_201_CREATED)
 async def create_todo(
         todo_data: TodoCreate,
-        current_user: User = Depends(get_current_user),
+        # current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Create a new todo"""
@@ -54,7 +54,6 @@ async def create_todo(
         title=todo_data.title,
         description=todo_data.description,
         completed=todo_data.completed,
-        user_id=current_user.id
     )
 
     db.add(new_todo)
@@ -64,17 +63,16 @@ async def create_todo(
     return new_todo
 
 
-@router.put("/{todo_id}", response_model=TodoResponse)
+@router.put("/{todo_id}", response_model=TodoList)
 async def update_todo(
         todo_id: int,
         todo_data: TodoUpdate,
-        current_user: User = Depends(get_current_user),
+        # current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
     """Update a todo"""
     todo = db.query(Todo).filter(
-        Todo.id == todo_id,
-        Todo.user_id == current_user.id
+        Todo.id == todo_id
     ).first()
 
     if not todo:
@@ -98,13 +96,12 @@ async def update_todo(
 @router.delete("/{todo_id}", status_code=status.HTTP_200_OK)
 async def delete_todo(
         todo_id: int,
-        current_user: User = Depends(get_current_user),
+
         db: Session = Depends(get_db)
 ):
     """Delete a todo"""
     todo = db.query(Todo).filter(
-        Todo.id == todo_id,
-        Todo.user_id == current_user.id
+        Todo.id == todo_id
     ).first()
 
     if not todo:

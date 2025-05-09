@@ -5,10 +5,10 @@ import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { store } from './redux/store';
 import QueryProvider from './lib/QueryProvider';
-import TodoApp from './pages/Todo/TodoApp';
-import LoginPage from './pages/Auth/LoginPage';
-import RegisterPage from './pages/Auth/RegisterPage';
-import PrivateRoute from './components/PrivateRoute';
+import TodoApp from './page/Todo/TodoApp'
+import LoginPage from './page/Authentication/LoginPage';
+import RegisterPage from './page/Authentication/RegisterPage';
+import PrivateRoute from './page/Authentication/PrivateRoute';
 import { selectIsDarkMode, selectIsAuthenticated } from './redux/uiSlice';
 
 const { Content } = Layout;

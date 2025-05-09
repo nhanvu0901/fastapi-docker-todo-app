@@ -18,7 +18,7 @@ class TodoUpdate(BaseModel):
     completed: Optional[bool] = None
 
 
-class TodoResponse(TodoBase):
+class TodoList(TodoBase):
     id: int
     user_id: int
     completed: bool

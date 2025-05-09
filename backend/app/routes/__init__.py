@@ -1,5 +1,5 @@
 # Import all route modules
-from .users import router as user_router
-from .todos import router as todo_router
+from .user import router as user_router
+from .todo import router as todo_router
 
-__all__ = ["user_router", "todo_router"]
+__all__ = ["todo_router","user_router"]

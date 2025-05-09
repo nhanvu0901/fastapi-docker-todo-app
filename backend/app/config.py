@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import List
+import os
 
 
 class Settings(BaseSettings):
@@ -11,12 +12,20 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24 * 60  # 30 days
 
-    # CORS settings
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    # CORS settings - changed from list to str to avoid JSON parsing
+    ALLOWED_ORIGINS_STR: str = "http://localhost:3000"
+
+    @property
+    def ALLOWED_ORIGINS(self) -> List[str]:
+        """Parse comma-separated string into a list of origins"""
+        origins_str = os.getenv("ALLOWED_ORIGINS", self.ALLOWED_ORIGINS_STR)
+        return [origin.strip() for origin in origins_str.split(",") if origin.strip()]
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        # Use .env file if available but allow environment variables to override
+        env_prefix = ""
 
 
 settings = Settings()
