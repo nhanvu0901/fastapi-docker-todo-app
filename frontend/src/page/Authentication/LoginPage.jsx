@@ -23,9 +23,11 @@ const LoginPage = () => {
                 dispatch(login(data));
                 message.success('Login successful!');
                 navigate('/');
+                setLoading(false);
             },
             onError: (error) => {
                 message.error(error.message || 'Failed to login. Please check your credentials.');
+                setLoading(false);
             },
 
         }
@@ -52,7 +54,7 @@ const LoginPage = () => {
                     autoComplete="off"
                 >
                     <Form.Item
-                        name="email"
+                        name="username"
                         rules={[
                             {required: true, message: 'Please input your email!'},
                             {type: 'email', message: 'Please enter a valid email address!'}

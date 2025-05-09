@@ -1,8 +1,11 @@
 import axiosClient from "./axiosClient";
 
-const loginUser = () => {
+const loginUser = ({username, password}) => {
     const url = `/users/login`
-    return axiosClient.post(url)
+    return axiosClient.post(url, {
+        username,
+        password,
+    })
 }
 
 

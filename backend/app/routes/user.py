@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from typing import List
@@ -96,37 +96,70 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Error creating user"
         )
 
+
 @router.post("/login", response_model=Token)
 async def login_user(
-        form_data: OAuth2PasswordRequestForm = Depends(),
+        request: Request,
         db: Session = Depends(get_db)
 ):
-    """Login a user"""
-    # Find user by username or email
-    user = db.query(User).filter(
-        (User.username == form_data.username) | (User.email == form_data.username)
-    ).first()
+    """Login a user - handles both form data and JSON"""
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    # First, try to get content type
+    content_type = request.headers.get("content-type", "").lower()
+    try:
+        # For JSON requests
+        if "application/json" in content_type:
+            # Parse as JSON
+            json_data = await request.json()
+            username = json_data.get("username")
+            password = json_data.get("password")
+
+        # If username or password is missing, return error
+        if not username or not password:
+            print(
+                f"Missing username or password. Username: {username}, Password: {'*' * len(password) if password else 'None'}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username and password are required"
+            )
+
+
+        user = db.query(User).filter(
+            (User.email == username) | (User.username == username)
+        ).first()
+
+        if not user or not verify_password(password, user.hashed_password):
+            print("Invalid credentials")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Update last login time
+        user.last_login = datetime.utcnow()
+        db.commit()
+
+        # Create access token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=access_token_expires
         )
 
-    # Update last login time
-    user.last_login = datetime.utcnow()
-    db.commit()
+        print("Login successful, returning token")
+        return {"access_token": access_token, "token_type": "bearer"}
 
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": str(user.id)},
-        expires_delta=access_token_expires
-    )
-
-    return {"access_token": access_token, "token_type": "bearer"}
-
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Unexpected error in login: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(e)}"
+        )
 # @router.get("/me", response_model=UserResponse)
 # async def get_user_profile(current_user: User = Depends(get_current_user)):
 #     """Get current user profile"""
