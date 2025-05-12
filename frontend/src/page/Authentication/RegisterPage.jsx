@@ -25,7 +25,7 @@ const RegisterPage = () => {
                 navigate('/');
             },
             onError: (error) => {
-                message.error(error.message || 'Registration failed. Please try again.');
+                message.error(error.response.data.detail || 'Registration failed. Please try again.');
             },
             onSettled: () => {
                 setLoading(false);

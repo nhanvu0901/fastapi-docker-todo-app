@@ -31,6 +31,12 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class UserRegistrationResponse(BaseModel):
+    user: UserResponse
+    token: Token
+
+    class Config:
+        from_attributes = True
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None

@@ -9,7 +9,9 @@ import TodoApp from './page/Todo/TodoApp'
 import LoginPage from './page/Authentication/LoginPage';
 import RegisterPage from './page/Authentication/RegisterPage';
 import PrivateRoute from './page/Authentication/PrivateRoute';
+import MenuBar from './page/Menu/Menu'
 import { selectIsDarkMode, selectIsAuthenticated } from './redux/uiSlice';
+
 
 const { Content } = Layout;
 
@@ -26,6 +28,7 @@ const AppContent = () => {
     >
       <Router>
         <Layout style={{ minHeight: '100vh' }}>
+          {isAuthenticated ? <MenuBar/> : ''}
           <Content style={{ padding: '0 50px', marginTop: 40 }}>
             <div style={{ background: 'var(--background)', padding: 24, borderRadius: 4 }}>
               <Routes>
@@ -39,7 +42,7 @@ const AppContent = () => {
                   path="/"
                   element={
                     <PrivateRoute>
-                      <TodoApp />
+                      <TodoApp/>
                     </PrivateRoute>
                   }
                 />

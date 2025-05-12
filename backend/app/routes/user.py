@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from ..database import get_db
 from ..models.user import User
-from ..schemas.user import UserCreate, UserResponse, Token
+from ..schemas.user import UserCreate, UserResponse, Token, UserRegistrationResponse
 from ..utils.auth import (
     verify_password,
     get_password_hash,
@@ -20,47 +20,7 @@ from ..config import settings
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
-# @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-# async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-#     """Register a new user"""
-#     # Check if username or email already exists
-#     existing_user = db.query(User).filter(
-#         (User.username == user_data.username) | (User.email == user_data.email)
-#     ).first()
-#
-#     if existing_user:
-#         if existing_user.username == user_data.username:
-#             raise HTTPException(
-#                 status_code=status.HTTP_400_BAD_REQUEST,
-#                 detail="Username already registered"
-#             )
-#         else:
-#             raise HTTPException(
-#                 status_code=status.HTTP_400_BAD_REQUEST,
-#                 detail="Email already registered"
-#             )
-#
-#     # Create new user
-#     hashed_password = get_password_hash(user_data.password)
-#
-#     db_user = User(
-#         username=user_data.username,
-#         email=user_data.email,
-#         hashed_password=hashed_password
-#     )
-#
-#     try:
-#         db.add(db_user)
-#         db.commit()
-#         db.refresh(db_user)
-#         return db_user
-#     except IntegrityError:
-#         db.rollback()
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Error creating user"
-#         )
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserRegistrationResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(
         (User.username == user_data.username) | (User.email == user_data.email)
@@ -79,20 +39,39 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
     # create new user
     hashed_password = get_password_hash(user_data.password)
+
+    current_time = datetime.utcnow()
+
     db_user = User(
         username=user_data.username,
         email=user_data.email,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        last_login=current_time,
+        created_at=current_time  # Make sure this is set
     )
     try:
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        return db_user
+
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(db_user.id)},
+            expires_delta=access_token_expires
+        )
+
+        # Return properly formatted response
+        return {
+            "user": db_user,
+            "token": {
+                "access_token": access_token,
+                "token_type": "bearer"
+            }
+        }
     except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Error creating user"
         )
 
@@ -122,7 +101,6 @@ async def login_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username and password are required"
             )
-
 
         user = db.query(User).filter(
             (User.email == username) | (User.username == username)
