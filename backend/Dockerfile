@@ -15,6 +15,12 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the startup script first
+COPY start.sh /app/start.sh
+
+# Make the script executable
+RUN chmod +x /app/start.sh
+
 # Copy the rest of the application
 COPY . .
 
@@ -22,8 +28,9 @@ COPY . .
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Expose the port
+# Expose the port for app and debugger
 EXPOSE 8000
+EXPOSE 5678
 
-# Run directly with uvicorn instead of using a script
-CMD ["bash", "-c", "echo 'Waiting for PostgreSQL...' && until pg_isready -h postgres -p 5432 -U postgres; do sleep 1; done && echo 'PostgreSQL is ready!' && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+# Use the startup script
+CMD ["/app/start.sh"]
